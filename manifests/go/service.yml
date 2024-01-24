@@ -1,0 +1,13 @@
+apiVersion: "v1"
+kind: "Service"
+metadata:
+  name: simple-go-api
+  namespace: "default"
+spec:
+  ports:
+  - protocol: "TCP"
+    port: 80
+    targetPort: 8080
+  selector:
+    app: "simple-go-api"
+  type: "ClusterIP"

@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simple-go-api
+  namespace: "default"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: simple-go-api
+  template:
+    metadata:
+      labels:
+        app: simple-go-api
+    spec:
+      containers:
+        - name: simple-go-api
+          image: docker.io/garinichsan/simple-go-api
+          ports:
+            - containerPort: 8080

@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simple-node-api
+  namespace: "default"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: simple-node-api
+  template:
+    metadata:
+      labels:
+        app: simple-node-api
+    spec:
+      containers:
+        - name: simple-node-api
+          image: docker.io/garinichsan/simple-node-api
+          ports:
+            - containerPort: 3000
