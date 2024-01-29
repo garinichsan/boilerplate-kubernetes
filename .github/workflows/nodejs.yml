@@ -1,0 +1,90 @@
+name: Pipeline Example Node
+defaults:
+  run:
+    working-directory: backends/nodejs
+
+on:
+  push:
+    branches:
+      - "master"
+    paths:
+      - "backends/nodejs/**"
+      - ".github/workflows/nodejs.yml"
+
+jobs:
+  
+  # Job: Run Unit Tests
+  test-job:
+    name: Test Example Node
+    runs-on: ubuntu-latest
+    steps:
+
+      # Step 1: Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v3
+    
+      # Step 2: Setup Node
+      - name: Set up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.16'
+
+      # Step 3: Install dependencies
+      - name: Install dependencies
+        run: npm install
+    
+      # Step 4: Run unit tests
+      - name: Run Unit Test
+        run: npm test
+
+  # Job: Build Docker Image
+  build-job:
+    name: Build Docker Image - Example Node
+    needs: test-job
+    runs-on: ubuntu-latest
+    
+    env:
+      REPO_NAME: 'simple-node-api'
+      DOCKER_USERNAME: 'garinichsan'
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+    
+    steps:
+    
+      # Step 1: Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v4
+    
+      # Step 2: Authenticate 
+      - name: docker login
+        run: | # log into docker hub account
+          docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+      
+      # Step 3: Build and push The image to the docker hub
+      - name: Build the Docker image 
+        run: docker build . --file Dockerfile --tag $DOCKER_USERNAME/$REPO_NAME:latest
+      - name: Docker Push
+        run: docker push $DOCKER_USERNAME/$REPO_NAME:latest
+
+  # Job: Deploy to Kubernetes
+  deploy-job:
+    name: Deploy to Kubernetes
+    needs: build-job
+    runs-on: ubuntu-latest
+        
+    steps:
+    
+      # Step 1
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-southeast-3
+
+      # Step 2
+      - name: Deploy to cluster
+        uses: kodermax/kubectl-aws-eks@main
+        env:
+          KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+        with:
+          args: -n default rollout restart deployment/simple-node-api
